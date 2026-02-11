@@ -1,0 +1,1 @@
+{"type":"program","statements":[{"type":"VAR_DECL"},{"type":"VAR_DECL"},{"type":"prompt_def","name":"greeting","body":{"type":"element_list","elements":[{"type":"text","text":"Hello, $name! Welcome to $systemName.","raw":false}]}},{"type":"OUTPUT_SPEC"}]}

@@ -112,7 +112,15 @@ int main(int argc, char* argv[]) {
         } else if (strcmp(argv[i], "--debug") == 0) {
             debug = 1;
         } else if (argv[i][0] != '-') {
-            input_file = argv[i];
+            /* Handle positional arguments: input_file and output_file */
+            if (input_file == NULL) {
+                input_file = argv[i];
+            } else if (output_file == NULL) {
+                output_file = argv[i];
+            } else {
+                fprintf(stderr, "Error: Too many arguments\n");
+                return 1;
+            }
         } else {
             fprintf(stderr, "Error: Unknown option '%s'\n", argv[i]);
             return 1;
@@ -277,12 +285,19 @@ int main(int argc, char* argv[]) {
     }
 
     /* Cleanup */
+    if (debug) printf("Cleanup: freeing codegen...\n");
     codegen_free(codegen);
-    semantic_analyzer_free(semantic);
+    if (debug) printf("Cleanup: freeing ast...\n");
     ast_node_free(ast);
+    if (debug) printf("Cleanup: freeing semantic analyzer...\n");
+    semantic_analyzer_free(semantic);
+    if (debug) printf("Cleanup: freeing parser...\n");
     parser_free(parser);
+    if (debug) printf("Cleanup: freeing lexer...\n");
     lexer_free(lexer);
+    if (debug) printf("Cleanup: freeing source...\n");
     free(source);
+    if (debug) printf("Cleanup: done\n");
 
     printf("Compilation successful!\n");
     printf("Output: %s\n", output_file);

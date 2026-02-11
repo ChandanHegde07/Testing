@@ -7,6 +7,34 @@
 #include <stdio.h>
 #include <string.h>
 
+/* Forward declarations for static functions */
+static ASTNode* parse_program(Parser* parser);
+static ASTNode* parse_statement(Parser* parser);
+static ASTNode* parse_prompt_def(Parser* parser);
+static ASTNode* parse_var_decl(Parser* parser);
+static ASTNode* parse_template_def(Parser* parser);
+static ASTNode* parse_constraint_def(Parser* parser);
+static ASTNode* parse_output_spec(Parser* parser);
+static ASTNode* parse_element_list(Parser* parser);
+static ASTNode* parse_element(Parser* parser);
+static ASTNode* parse_text_element(Parser* parser, int is_raw);
+static ASTNode* parse_variable_element(Parser* parser);
+static ASTNode* parse_template_element(Parser* parser);
+static ASTNode* parse_if_stmt(Parser* parser);
+static ASTNode* parse_for_stmt(Parser* parser);
+static ASTNode* parse_while_stmt(Parser* parser);
+static ASTNode* parse_expression(Parser* parser);
+static ASTNode* parse_logical_or(Parser* parser);
+static ASTNode* parse_logical_and(Parser* parser);
+static ASTNode* parse_equality(Parser* parser);
+static ASTNode* parse_comparison(Parser* parser);
+static ASTNode* parse_term(Parser* parser);
+static ASTNode* parse_factor(Parser* parser);
+static ASTNode* parse_unary(Parser* parser);
+static ASTNode* parse_power(Parser* parser);
+static ASTNode* parse_primary(Parser* parser);
+static ASTNode* parse_constraint_expr(Parser* parser);
+
 /* Helper functions */
 
 static Token* parser_peek(Parser* parser, size_t offset) {

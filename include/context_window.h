@@ -1,9 +1,3 @@
-// LLM Context Window Manager
-// Header file for core functionality
-//
-// Manages conversation history within LLM context window limits using sliding window
-// and priority-based message retention.
-
 #ifndef CONTEXT_WINDOW_H
 #define CONTEXT_WINDOW_H
 
@@ -60,7 +54,7 @@ bool context_window_add_message(ContextWindow* window,
                                 MessagePriority priority,
                                 const char* content);
 
-// Get the optimized context text ready for LLM API
+// Get the optimized context text ready for SLM API
 // Returns a dynamically allocated string that must be freed
 char* context_window_get_context(ContextWindow* window);
 

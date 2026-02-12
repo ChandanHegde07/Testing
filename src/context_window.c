@@ -1,4 +1,4 @@
-// LLM Context Window Manager
+// SLM Context Window Manager
 // Implementation of core functionality
 
 #include "context_window.h"
@@ -196,7 +196,7 @@ static const char* get_message_type_string(MessageType type) {
     }
 }
 
-// Get the optimized context text ready for LLM API
+// Get the optimized context text ready for SLM API
 char* context_window_get_context(ContextWindow* window) {
     if (window == NULL || window->head == NULL) {
         char* empty = (char*)malloc(1);

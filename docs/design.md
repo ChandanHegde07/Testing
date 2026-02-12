@@ -1,14 +1,14 @@
-# LLM Context Window Manager - Design Document
+# SLM Context Window Manager - Design Document
 
 ## 1. Introduction
 
-The LLM Context Window Manager is a C-based system designed to efficiently manage conversation history within the limited context window constraints of modern Large Language Models (LLMs). This document provides a comprehensive design overview, including architectural decisions, data structures, algorithms, and implementation details.
+The SLM Context Window Manager is a C-based system designed to efficiently manage conversation history within the limited context window constraints of modern Small Language Models (SLMs). This document provides a comprehensive design overview, including architectural decisions, data structures, algorithms, and implementation details.
 
 ## 2. System Overview
 
 ### 2.1 Problem Statement
 
-LLMs like GPT-3/4, Claude, and Llama have fixed context window sizes that limit the amount of conversation history they can process in a single request. When conversations exceed this limit, LLMs either reject the request or truncate the history arbitrarily, often losing critical context.
+SLMs like GPT-3/4, Claude, and Llama have fixed context window sizes that limit the amount of conversation history they can process in a single request. When conversations exceed this limit, SLMs either reject the request or truncate the history arbitrarily, often losing critical context.
 
 ### 2.2 Key Objectives
 
@@ -18,7 +18,7 @@ The system addresses these challenges by implementing:
 - **Priority-Based Message Retention**: Ensures important messages are retained
 - **Approximate Token Counting**: Fast heuristic-based token estimation
 - **Dynamic Compression**: Removes or compresses old messages when token limits are exceeded
-- **Formatted Output**: Generates optimized context strings ready for LLM API consumption
+- **Formatted Output**: Generates optimized context strings ready for SLM API consumption
 
 ## 3. Architecture Design
 
@@ -33,7 +33,7 @@ graph TD
     B --> F[Context Formatter]
     C --> G[Messages with Metadata]
     E --> H[Priority-Based Retention]
-    F --> I[Formatted Context for LLM API]
+    F --> I[Formatted Context for SLM API]
 ```
 
 ### 3.2 Component Diagram
@@ -334,7 +334,7 @@ clean: Remove compiled files
 
 ```c
 char* context = context_window_get_context(window);
-send_llm_request(context, completion_callback);
+send_slm_request(context, completion_callback);
 free(context);
 ```
 
@@ -345,7 +345,7 @@ char* user_message = get_user_input();
 context_window_add_message(window, MESSAGE_USER, PRIORITY_HIGH, user_message);
 
 char* api_context = context_window_get_context(window);
-char* ai_response = call_llm_api(api_context);
+char* ai_response = call_slm_api(api_context);
 
 context_window_add_message(window, MESSAGE_ASSISTANT, PRIORITY_NORMAL, ai_response);
 send_response_to_client(ai_response);
@@ -369,4 +369,4 @@ free(ai_response);
 
 ## 15. Conclusion
 
-The LLM Context Window Manager provides an efficient and robust solution for managing conversation history within LLM context window constraints. Its design balances performance, simplicity, and extensibility, making it suitable for integration into various LLM-based applications.
+The SLM Context Window Manager provides an efficient and robust solution for managing conversation history within SLM context window constraints. Its design balances performance, simplicity, and extensibility, making it suitable for integration into various SLM-based applications.

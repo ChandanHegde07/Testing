@@ -1,4 +1,4 @@
-// LLM Context Window Manager Tests
+// SLM Context Window Manager Tests
 // Test file for window management functionality
 
 #include <stdio.h>
@@ -119,7 +119,7 @@ void test_get_context() {
 }
 
 int main() {
-    printf("LLM Context Window Manager - Test Suite\n");
+    printf("SLM Context Window Manager - Test Suite\n");
     printf("======================================\n\n");
     
     test_create_destroy();

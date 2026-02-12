@@ -1,4 +1,4 @@
-Sample Conversation - LLM Context Window Manager
+Sample Conversation - SLM Context Window Manager
 
 System: You are a helpful AI assistant. Please answer questions concisely and accurately.
 

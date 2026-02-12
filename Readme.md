@@ -1,12 +1,12 @@
-# LLM Context Window Manager 
+# SLM Context Window Manager 
 
 PCC : Prompt Context Controller
 
-A C-based system designed to efficiently manage conversation history within the limited context window constraints of modern Large Language Models (LLMs).
+A C-based system designed to efficiently manage conversation history within the limited context window constraints of modern Small Language Models (SLMs).
 
 ## Problem Statement
 
-LLMs like GPT-3/4, Claude, and Llama have fixed context window sizes (typically 4k to 128k tokens) that limit the amount of conversation history they can process in a single request. When conversations exceed this limit, LLMs either reject the request or truncate the history arbitrarily, often losing critical context.
+SLMs like GPT-3/4, Claude, and Llama have fixed context window sizes (typically 4k to 128k tokens) that limit the amount of conversation history they can process in a single request. When conversations exceed this limit, SLMs either reject the request or truncate the history arbitrarily, often losing critical context.
 
 ## Solution Overview
 
@@ -16,7 +16,7 @@ This system implements intelligent conversation history management using:
 2. **Priority-Based Message Retention**: Ensures important messages (system prompts, user questions) are retained
 3. **Approximate Token Counting**: Fast heuristic-based token estimation without complex NLP libraries
 4. **Dynamic Compression**: Removes or compresses old messages when token limits are exceeded
-5. **Formatted Output**: Generates optimized context strings ready for LLM API consumption
+5. **Formatted Output**: Generates optimized context strings ready for SLM API consumption
 
 ## DSA Concepts Used
 
@@ -41,7 +41,7 @@ This system implements intelligent conversation history management using:
 - Balances accuracy and performance
 
 ### 5. Context Optimization
-- Generates formatted context strings suitable for LLM APIs
+- Generates formatted context strings suitable for SLM APIs
 - Proper message type labeling and formatting
 - Handles edge cases like empty windows
 
@@ -198,11 +198,11 @@ Assistant: Python provides built-in functions to convert between data types. For
 
 ### Direct API Integration
 ```c
-// Prepare context for LLM API call
+// Prepare context for SLM API call
 char* context = context_window_get_context(window);
 
 // Example API request
-send_llm_request(context, completion_callback);
+send_slm_request(context, completion_callback);
 
 // Free context after use
 free(context);
@@ -219,8 +219,8 @@ context_window_add_message(window, MESSAGE_USER, PRIORITY_HIGH, user_message);
 // Generate optimized context for API
 char* api_context = context_window_get_context(window);
 
-// Send to LLM API and get response
-char* ai_response = call_llm_api(api_context);
+// Send to SLM API and get response
+char* ai_response = call_slm_api(api_context);
 
 // Add response to window
 context_window_add_message(window, MESSAGE_ASSISTANT, PRIORITY_NORMAL, ai_response);

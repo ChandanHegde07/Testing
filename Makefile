@@ -1,4 +1,4 @@
-# LLM Context Window Manager - Makefile
+# SLM Context Window Manager - Makefile
 
 # Compiler and flags
 CC = gcc
@@ -6,7 +6,7 @@ CFLAGS = -Wall -Wextra -Iinclude -g
 LDFLAGS =
 
 # Targets
-TARGET = llm-context-manager
+TARGET = slm-context-manager
 TEST_TARGET = test-window-manager
 
 # Source files

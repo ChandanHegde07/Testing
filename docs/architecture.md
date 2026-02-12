@@ -1,12 +1,12 @@
-# LLM Context Window Manager - Architecture
+# SLM Context Window Manager - Architecture
 
 ## Overview
 
-The LLM Context Window Manager is a C-based system designed to efficiently manage conversation history within the limited context window constraints of modern Large Language Models (LLMs). It implements intelligent message retention and compression strategies to ensure that the most important information remains within the context window while staying under token limits.
+The SLM Context Window Manager is a C-based system designed to efficiently manage conversation history within the limited context window constraints of modern Small Language Models (SLMs). It implements intelligent message retention and compression strategies to ensure that the most important information remains within the context window while staying under token limits.
 
 ## Problem Statement
 
-LLMs like GPT-3/4, Claude, and Llama have fixed context window sizes that limit the amount of conversation history they can process in a single request. This creates several challenges:
+SLMs like GPT-3/4, Claude, and Llama have fixed context window sizes that limit the amount of conversation history they can process in a single request. This creates several challenges:
 
 1. **Token Limit Exceedance**: Conversations longer than the token limit are rejected
 2. **Information Loss**: Truncating conversations arbitrarily can lose important context
@@ -68,7 +68,7 @@ typedef struct ContextWindow {
 #### Message Management
 - `context_window_add_message()` - Adds new messages with type and priority
 - `remove_message()` - Removes specific messages from the linked list
-- `context_window_get_context()` - Generates formatted context string for LLM API
+- `context_window_get_context()` - Generates formatted context string for SLM API
 
 #### Compression Strategy
 1. First, remove all PRIORITY_LOW messages

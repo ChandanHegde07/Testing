@@ -1,10 +1,7 @@
-// LLM Context Window Manager
-// Main application entry point
-
 #include "context_window.h"
 
 int main() {
-    printf("LLM Context Window Manager\n");
+    printf("SLM Context Window Manager\n");
     printf("==========================\n\n");
     
     // Create a context window with 1000 token limit
@@ -63,7 +60,7 @@ int main() {
     printf("\n");
     
     // Get and print the optimized context
-    printf("Optimized Context for LLM API:\n");
+    printf("Optimized Context for SLM API:\n");
     printf("-------------------------------\n");
     char* context = context_window_get_context(window);
     if (context != NULL) {

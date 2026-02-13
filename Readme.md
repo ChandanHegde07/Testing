@@ -1,256 +1,421 @@
-# SLM Context Window Manager 
+# PCC - Prompt Context Controller
 
-PCC : Prompt Context Controller
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Language: C](https://img.shields.io/badge/Language-C-blue.svg)](https://en.wikipedia.org/wiki/C_(programming_language))
+[![Platform: POSIX](https://img.shields.io/badge/Platform-POSIX-green.svg)](https://en.wikipedia.org/wiki/POSIX)
 
-A C-based system designed to efficiently manage conversation history within the limited context window constraints of modern Small Language Models (SLMs).
+> A lightweight, efficient C-based system for managing conversation history within the limited context window constraints of Small Language Models (SLMs).
 
-## Problem Statement
+---
 
-SLMs like GPT-3/4, Claude, and Llama have fixed context window sizes (typically 4k to 128k tokens) that limit the amount of conversation history they can process in a single request. When conversations exceed this limit, SLMs either reject the request or truncate the history arbitrarily, often losing critical context.
+## Table of Contents
 
-## Solution Overview
+- [Overview](#overview)
+- [The Problem](#the-problem)
+- [Features](#features)
+- [How It Works](#how-it-works)
+- [Project Structure](#project-structure)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Usage](#usage)
+- [API Reference](#api-reference)
+- [Performance](#performance)
+- [Documentation](#documentation)
+- [Examples](#examples)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
 
-This system implements intelligent conversation history management using:
+---
 
-1. **Sliding Window Technique**: Maintains a contiguous window of messages within the token limit
-2. **Priority-Based Message Retention**: Ensures important messages (system prompts, user questions) are retained
-3. **Approximate Token Counting**: Fast heuristic-based token estimation without complex NLP libraries
-4. **Dynamic Compression**: Removes or compresses old messages when token limits are exceeded
-5. **Formatted Output**: Generates optimized context strings ready for SLM API consumption
+## Overview
 
-## DSA Concepts Used
+**PCC (Prompt Context Controller)** is a C library designed to efficiently manage conversation history for Small Language Models. It implements intelligent context window management using proven data structures and algorithms, ensuring optimal token utilization while preserving critical conversation context.
 
-### 1. Linked List Data Structure
-- **Doubly Linked List**: Efficient insertion/deletion operations at both ends
-- **Dynamic Memory Management**: Allows flexible message storage
-- **O(1) operations** for adding messages to the end and removing from the front
+### Why PCC?
 
-### 2. Sliding Window Algorithm
-- Maintains a fixed-size window of messages within token limits
-- New messages are added to the end
-- Old messages are removed from the front when limits are exceeded
+| Feature | Description |
+|---------|-------------|
+| **Lightweight** | Pure C implementation with minimal dependencies |
+| **Fast** | O(1) amortized message insertion with efficient memory management |
+| **Smart Retention** | Priority-based message retention keeps important context |
+| **Token Aware** | Approximate token counting without heavy NLP libraries |
+| **Easy Integration** | Simple API for direct integration into existing projects |
 
-### 3. Priority Queue Implementation
-- Messages assigned priority levels (CRITICAL, HIGH, NORMAL, LOW)
-- Lower priority messages are removed first during compression
-- Ensures critical information remains in context
+---
 
-### 4. Token Estimation Heuristics
-- Simple heuristic: 1 token ≈ 4 characters (worst-case estimation)
-- Fast calculation: `token_count = (str_length + 3) / 4`
-- Balances accuracy and performance
+## The Problem
 
-### 5. Context Optimization
-- Generates formatted context strings suitable for SLM APIs
-- Proper message type labeling and formatting
-- Handles edge cases like empty windows
+Small Language Models (SLMs) like Phi-2, TinyLlama, and Gemma have limited context windows (typically 2K-8K tokens). When conversations exceed these limits:
+
+- API requests get rejected
+- Critical context gets arbitrarily truncated
+- Important system prompts may be lost
+- Conversation coherence degrades
+
+**PCC solves this** by intelligently managing the context window, ensuring the most relevant information stays within token limits.
+
+---
+
+## Features
+
+- **Sliding Window Technique** - Maintains contiguous message window within token limits
+- **Priority-Based Retention** - Critical messages (system prompts) are preserved
+- **Fast Token Estimation** - Heuristic-based counting (~4 chars per token)
+- **Dynamic Compression** - Automatic removal of low-priority messages
+- **Formatted Output** - Ready-to-use context strings for SLM APIs
+- **Memory Safe** - Proper allocation/deallocation with leak prevention
+
+---
+
+## How It Works
+
+### Data Structures
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ContextWindow                            │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ max_tokens: 1000                                     │   │
+│  │ total_tokens: 847                                    │   │
+│  │ message_count: 5                                     │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  head ──► [System] ──► [User] ──► [Asst] ──► [User] ──► ◄── tail
+│            CRITICAL     HIGH       NORMAL      HIGH        │
+│            (kept)      (kept)     (removable)  (kept)      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Algorithm Flow
+
+```
+New Message Arrives
+        │
+        ▼
+┌───────────────────┐
+│ Calculate Tokens  │
+└─────────┬─────────┘
+          │
+          ▼
+┌───────────────────┐     ┌────────────────────┐
+│ Add to Window     │────►│ Exceeds Limit?     │
+└───────────────────┘     └─────────┬──────────┘
+                                    │
+                          ┌─────────┴─────────┐
+                          │ Yes               │ No
+                          ▼                   ▼
+                ┌─────────────────┐    ┌──────────────┐
+                │ Remove Lowest   │    │   Done       │
+                │ Priority Msgs   │    └──────────────┘
+                └─────────────────┘
+```
+
+---
 
 ## Project Structure
 
 ```
-.
-├── src/                # Core implementation
-│   ├── context_window.c     # Context window manager implementation
-│   └── main.c              # Example application
-├── include/            # Header files
-│   └── context_window.h    # Core functionality declarations
-├── tests/              # Test suite
-│   └── test_window_manager.c # Unit tests
-├── examples/           # Example data
-│   └── sample_conversation.txt # Sample conversation history
-├── docs/               # Documentation
-│   └── architecture.md       # Detailed architecture explanation
-├── Makefile            # Build system
-└── README.md           # This file
+PCC/
+├── src/
+│   ├── context_window.c    # Core implementation
+│   └── main.c              # Demo application
+├── include/
+│   └── context_window.h    # Public API header
+├── tests/
+│   └── test_window_manager.c  # Unit tests
+├── examples/
+│   └── sample_conversation.txt # Sample data
+├── docs/
+│   ├── architecture.md     # System architecture
+│   └── design.md           # Design decisions
+├── Makefile                # Build system
+├── LICENSE                 # MIT License
+└── Readme.md               # This file
 ```
 
-## Installation & Usage
+---
 
-### Prerequisites
-- C compiler (GCC 4.0 or later)
-- Standard C library
-- POSIX-compliant system (Linux, macOS, Windows with WSL)
-
-### Building the Project
+## Quick Start
 
 ```bash
-# Compile the project
+# Clone the repository
+git clone https://github.com/ChandanHegde07/PCC.git
+cd pcc
+
+# Build and run
+make all && make run
+```
+
+**Expected Output:**
+```
+SLM Context Window Manager
+==========================
+
+Adding initial messages...
+
+Context Window Statistics:
+--------------------------
+Max Tokens:     1000
+Current Tokens: 847
+Message Count:  6
+Utilization:    84.7%
+
+Optimized Context for SLM API:
+-------------------------------
+System: You are a helpful AI assistant...
+User: Hello! Can you help me with a programming problem?
+Assistant: Of course! What do you need help with?
+...
+```
+
+---
+
+## Installation
+
+### Prerequisites
+
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| GCC | 4.0+ | Or any C99-compliant compiler |
+| Make | Any | For build automation |
+| OS | POSIX | Linux, macOS, or WSL on Windows |
+
+### Build Commands
+
+```bash
+# Build everything (main app + tests)
 make all
+
+# Run the demo application
+make run
 
 # Run the test suite
 make test
 
-# Run the example program
-make run
-
-# Clean up compiled files
+# Clean build artifacts
 make clean
+
+# Complete clean (includes dist files)
+make distclean
 ```
 
-## Usage Example
+---
+
+## Usage
+
+### Basic Example
 
 ```c
 #include "context_window.h"
 
-int main() {
-    // Create context window with 1000 token limit
+int main(void) {
+    // Create a context window with 1000 token limit
     ContextWindow* window = context_window_create(1000);
     
-    // Add messages
+    // Add system prompt (highest priority - always retained)
     context_window_add_message(window, MESSAGE_SYSTEM, PRIORITY_CRITICAL, 
         "You are a helpful AI assistant.");
     
+    // Add conversation messages
     context_window_add_message(window, MESSAGE_USER, PRIORITY_HIGH, 
-        "Hello! Can you help me with C programming?");
+        "What is the capital of France?");
     
     context_window_add_message(window, MESSAGE_ASSISTANT, PRIORITY_NORMAL, 
-        "Of course! What do you need help with?");
+        "The capital of France is Paris.");
     
-    // Get optimized context
+    // Get optimized context for SLM API
     char* context = context_window_get_context(window);
-    printf("Context:\n%s", context);
-    free(context);
+    printf("Context:\n%s\n", context);
     
-    // Clean up
+    // Cleanup
+    free(context);
     context_window_destroy(window);
     
     return 0;
 }
 ```
 
-### Output
-```
-Context:
-System: You are a helpful AI assistant.
-User: Hello! Can you help me with C programming?
-Assistant: Of course! What do you need help with?
+### Integration with SLM APIs
+
+```c
+// Typical workflow for SLM integration
+void process_user_query(ContextWindow* window, const char* user_input) {
+    // 1. Add user message
+    context_window_add_message(window, MESSAGE_USER, PRIORITY_HIGH, user_input);
+    
+    // 2. Get optimized context
+    char* context = context_window_get_context(window);
+    
+    // 3. Send to your SLM API
+    char* response = call_slm_api(context);  // Your API call
+    
+    // 4. Store assistant response
+    context_window_add_message(window, MESSAGE_ASSISTANT, PRIORITY_NORMAL, response);
+    
+    // 5. Cleanup
+    free(context);
+    free(response);
+}
 ```
 
-## Example Input/Output
-
-### Input
-```
-System: You are a helpful AI assistant.
-User: Hello! Can you help me learn Python?
-Assistant: Of course! I'd be happy to help you learn Python. What do you want to learn first?
-User: I want to understand variables and data types.
-Assistant: In Python, variables are used to store data. The main data types are integers, floats, strings, booleans, lists, and dictionaries.
-User: That's very helpful! What about converting between data types?
-Assistant: Python provides built-in functions to convert between data types. For example, int(), str(), float(), etc.
-```
-
-### Output with Window Size 500
-```
-System: You are a helpful AI assistant.
-User: I want to understand variables and data types.
-Assistant: In Python, variables are used to store data. The main data types are integers, floats, strings, booleans, lists, and dictionaries.
-User: That's very helpful! What about converting between data types?
-Assistant: Python provides built-in functions to convert between data types. For example, int(), str(), float(), etc.
-```
+---
 
 ## API Reference
 
 ### Core Functions
 
-#### Context Window Management
-- `ContextWindow* context_window_create(int max_tokens)` - Create new window
-- `void context_window_destroy(ContextWindow* window)` - Destroy window and free memory
-- `void context_window_print_stats(ContextWindow* window)` - Print window statistics
-
-#### Message Handling
-- `bool context_window_add_message(ContextWindow* window, MessageType type, MessagePriority priority, const char* content)` - Add new message
-- `char* context_window_get_context(ContextWindow* window)` - Get formatted context string
-- `int context_window_get_message_count(ContextWindow* window)` - Get message count
-- `int context_window_get_token_count(ContextWindow* window)` - Get token count
-
-#### Utility Functions
-- `int calculate_token_count(const char* text)` - Estimate token count for string
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `context_window_create(int max_tokens)` | Create new context window | `ContextWindow*` |
+| `context_window_destroy(ContextWindow* window)` | Free all resources | `void` |
+| `context_window_add_message(...)` | Add message to window | `bool` |
+| `context_window_get_context(...)` | Get formatted context string | `char*` |
+| `context_window_get_message_count(...)` | Get number of messages | `int` |
+| `context_window_get_token_count(...)` | Get total token count | `int` |
+| `context_window_print_stats(...)` | Print window statistics | `void` |
+| `calculate_token_count(const char* text)` | Estimate tokens in string | `int` |
 
 ### Enumerations
 
-#### Message Types
-- `MESSAGE_SYSTEM` - System prompt
-- `MESSAGE_USER` - User message
-- `MESSAGE_ASSISTANT` - Assistant message
-- `MESSAGE_TOOL` - Tool response
+#### MessageType
 
-#### Priority Levels
-- `PRIORITY_CRITICAL` - Highest priority (system prompts)
-- `PRIORITY_HIGH` - High priority (user questions)
-- `PRIORITY_NORMAL` - Normal priority (assistant responses)
-- `PRIORITY_LOW` - Low priority (detailed explanations, examples)
+```c
+typedef enum {
+    MESSAGE_USER,      // User input
+    MESSAGE_ASSISTANT, // AI response
+    MESSAGE_SYSTEM,    // System prompt
+    MESSAGE_TOOL       // Tool/function response
+} MessageType;
+```
+
+#### MessagePriority
+
+```c
+typedef enum {
+    PRIORITY_LOW,      // Can be removed first
+    PRIORITY_NORMAL,   // Default priority
+    PRIORITY_HIGH,     // User questions
+    PRIORITY_CRITICAL  // System prompts (never removed)
+} MessagePriority;
+```
+
+---
 
 ## Performance
 
 ### Time Complexity
-- Adding a message: O(n) in worst case (due to compression), O(1) amortized
-- Removing a message: O(1)
-- Calculating context string: O(n)
+
+| Operation | Complexity | Notes |
+|-----------|------------|-------|
+| Add message | O(1) amortized | O(n) worst case during compression |
+| Remove message | O(1) | Direct pointer manipulation |
+| Get context | O(n) | Must traverse all messages |
+| Token count | O(1) | Stored and updated incrementally |
 
 ### Space Complexity
-- O(n) where n is the number of messages
 
-### Memory Usage
-- Each message typically uses ~100-200 bytes of overhead (plus content storage)
-- Can handle thousands of messages per 1MB of memory
+- **Overall**: O(n) where n = number of messages
+- **Per message**: ~100-200 bytes overhead + content length
 
-## Applications
+### Memory Efficiency
 
-### Direct API Integration
-```c
-// Prepare context for SLM API call
-char* context = context_window_get_context(window);
+| Messages | Approximate Memory |
+|----------|-------------------|
+| 100 | ~50 KB |
+| 1,000 | ~500 KB |
+| 10,000 | ~5 MB |
 
-// Example API request
-send_slm_request(context, completion_callback);
+---
 
-// Free context after use
-free(context);
+## Documentation
+
+Additional documentation is available in the [`docs/`](docs/) directory:
+
+- **[Architecture Guide](docs/architecture.md)** - Detailed system architecture and component overview
+- **[Design Document](docs/design.md)** - Design decisions and trade-offs
+
+---
+
+## Examples
+
+### Sample Conversation Processing
+
+**Input** (from [`examples/sample_conversation.txt`](examples/sample_conversation.txt)):
+```
+System: You are a helpful AI assistant.
+User: Hello! Can you help me learn Python?
+Assistant: Of course! I'd be happy to help...
+User: I want to understand variables and data types.
+Assistant: In Python, variables are used to store data...
 ```
 
-### Web Application Backend
-```c
-// Handle user request
-char* user_message = get_user_input();
-
-// Add to context window
-context_window_add_message(window, MESSAGE_USER, PRIORITY_HIGH, user_message);
-
-// Generate optimized context for API
-char* api_context = context_window_get_context(window);
-
-// Send to SLM API and get response
-char* ai_response = call_slm_api(api_context);
-
-// Add response to window
-context_window_add_message(window, MESSAGE_ASSISTANT, PRIORITY_NORMAL, ai_response);
-
-// Return to client
-send_response_to_client(ai_response);
-
-// Clean up
-free(api_context);
-free(ai_response);
+**Output** (with 500 token window):
+```
+System: You are a helpful AI assistant.
+User: I want to understand variables and data types.
+Assistant: In Python, variables are used to store data...
 ```
 
-## Future Enhancements
+*Note: Earlier messages were automatically removed to fit within token limits.*
 
-1. **Intelligent Summarization**: Compress old messages by generating concise summaries
-2. **Topic Detection**: Group related messages and retain key topics
-3. **User Preferences**: Allow custom priority rules based on user-defined patterns
-4. **Tokenization**: Integrate with real tokenizers like Hugging Face's tokenizers
-5. **Configuration**: Support external configuration files for system parameters
+---
+
+## Roadmap
+
+### Planned Features
+
+- [ ] **Intelligent Summarization** - Compress old messages into concise summaries
+- [ ] **Topic Detection** - Group related messages by topic
+- [ ] **Custom Priority Rules** - User-defined patterns for priority assignment
+- [ ] **Real Tokenization** - Integration with HuggingFace tokenizers
+- [ ] **Configuration Files** - External config for system parameters
+- [ ] **Thread Safety** - Mutex support for multi-threaded applications
+- [ ] **Persistence** - Save/load conversation state to disk
+
+---
 
 ## Contributing
 
-Contributions are welcome! Please feel free to:
+Contributions are welcome! Here's how to get started:
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
+
+### Development Guidelines
+
+- Follow the existing code style
+- Add tests for new functionality
+- Update documentation as needed
+- Ensure all tests pass (`make test`)
+
+---
 
 ## License
 
-MIT License - see LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+```
+MIT License
+
+Copyright (c) 2024 PCC Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software...
+```
+
+---
+
+<p align="center">
+  <strong>Built for the SLM community</strong>
+</p>
+
+<p align="center">
+  <a href="#overview">Back to Top</a>
+</p>

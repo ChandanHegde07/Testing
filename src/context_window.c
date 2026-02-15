@@ -1,20 +1,29 @@
-// Context window manager for maintaining message history within token limits using a linked list.
-
 #include "context_window.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
 
 #define TOKEN_ESTIMATION_RATIO 4
 
 int calculate_token_count(const char* text) {
-    if (text == NULL) return 0;
+    if (text == NULL) {
+        return 0;
+    }
     
-    int length = strlen(text);
-    return (length + TOKEN_ESTIMATION_RATIO - 1) / TOKEN_ESTIMATION_RATIO;
+    size_t length = strlen(text);
+    return (int)((length + TOKEN_ESTIMATION_RATIO - 1) / TOKEN_ESTIMATION_RATIO);
 }
 
 ContextWindow* context_window_create(int max_tokens) {
+    if (max_tokens <= 0) {
+        fprintf(stderr, "Error: max_tokens must be positive\n");
+        return NULL;
+    }
+    
     ContextWindow* window = (ContextWindow*)malloc(sizeof(ContextWindow));
     if (window == NULL) {
-        printf("Failed to allocate memory for context window\n");
+        fprintf(stderr, "Error: Failed to allocate memory for context window\n");
         return NULL;
     }
     
@@ -28,7 +37,9 @@ ContextWindow* context_window_create(int max_tokens) {
 }
 
 void context_window_destroy(ContextWindow* window) {
-    if (window == NULL) return;
+    if (window == NULL) {
+        return;
+    }
     
     Message* current = window->head;
     while (current != NULL) {
@@ -42,15 +53,26 @@ void context_window_destroy(ContextWindow* window) {
 }
 
 static Message* create_message(MessageType type, MessagePriority priority, const char* content) {
+    if (content == NULL) {
+        fprintf(stderr, "Error: Message content cannot be NULL\n");
+        return NULL;
+    }
+    
     Message* msg = (Message*)malloc(sizeof(Message));
     if (msg == NULL) {
-        printf("Failed to allocate memory for message\n");
+        fprintf(stderr, "Error: Failed to allocate memory for message\n");
+        return NULL;
+    }
+    
+    msg->content = strdup(content);
+    if (msg->content == NULL) {
+        fprintf(stderr, "Error: Failed to duplicate message content\n");
+        free(msg);
         return NULL;
     }
     
     msg->type = type;
     msg->priority = priority;
-    msg->content = strdup(content);
     msg->token_count = calculate_token_count(content);
     msg->next = NULL;
     msg->prev = NULL;
@@ -59,7 +81,9 @@ static Message* create_message(MessageType type, MessagePriority priority, const
 }
 
 static void remove_message(ContextWindow* window, Message* msg) {
-    if (window == NULL || msg == NULL) return;
+    if (window == NULL || msg == NULL) {
+        return;
+    }
     
     window->total_tokens -= msg->token_count;
     window->message_count--;
@@ -81,40 +105,38 @@ static void remove_message(ContextWindow* window, Message* msg) {
 }
 
 static bool compress_old_messages(ContextWindow* window) {
+    if (window == NULL) {
+        return false;
+    }
+    
     Message* current = window->head;
     while (current != NULL && window->total_tokens > window->max_tokens) {
+        Message* next = current->next;
         if (current->priority == PRIORITY_LOW) {
-            Message* to_remove = current;
-            current = current->next;
-            remove_message(window, to_remove);
-            continue;
+            remove_message(window, current);
         }
-        current = current->next;
+        current = next;
     }
     
     if (window->total_tokens > window->max_tokens) {
         current = window->head;
         while (current != NULL && window->total_tokens > window->max_tokens) {
+            Message* next = current->next;
             if (current->priority == PRIORITY_NORMAL) {
-                Message* to_remove = current;
-                current = current->next;
-                remove_message(window, to_remove);
-                continue;
+                remove_message(window, current);
             }
-            current = current->next;
+            current = next;
         }
     }
     
     if (window->total_tokens > window->max_tokens) {
         current = window->head;
         while (current != NULL && window->total_tokens > window->max_tokens) {
+            Message* next = current->next;
             if (current->priority == PRIORITY_HIGH) {
-                Message* to_remove = current;
-                current = current->next;
-                remove_message(window, to_remove);
-                continue;
+                remove_message(window, current);
             }
-            current = current->next;
+            current = next;
         }
     }
     
@@ -125,24 +147,28 @@ bool context_window_add_message(ContextWindow* window,
                                 MessageType type,
                                 MessagePriority priority,
                                 const char* content) {
-    if (window == NULL || content == NULL) return false;
+    if (window == NULL || content == NULL) {
+        fprintf(stderr, "Error: Invalid parameters for add_message\n");
+        return false;
+    }
     
     Message* msg = create_message(type, priority, content);
-    if (msg == NULL) return false;
+    if (msg == NULL) {
+        return false;
+    }
     
-    int new_total = window->total_tokens + msg->token_count;
+    if (msg->token_count > window->max_tokens) {
+        fprintf(stderr, "Error: Message (%d tokens) exceeds window capacity (%d tokens)\n",
+                msg->token_count, window->max_tokens);
+        free(msg->content);
+        free(msg);
+        return false;
+    }
     
-    if (new_total > window->max_tokens) {
+    if (window->total_tokens + msg->token_count > window->max_tokens) {
         if (!compress_old_messages(window)) {
-            if (msg->token_count > window->max_tokens) {
-                printf("Error: Message is too large for context window\n");
-                free(msg->content);
-                free(msg);
-                return false;
-            }
-            
-            while (window->total_tokens + msg->token_count > window->max_tokens) {
-                if (window->head == NULL) break;
+            while (window->head != NULL && 
+                   window->total_tokens + msg->token_count > window->max_tokens) {
                 remove_message(window, window->head);
             }
         }
@@ -165,11 +191,11 @@ bool context_window_add_message(ContextWindow* window,
 
 static const char* get_message_type_string(MessageType type) {
     switch (type) {
-        case MESSAGE_USER: return "User";
+        case MESSAGE_USER:      return "User";
         case MESSAGE_ASSISTANT: return "Assistant";
-        case MESSAGE_SYSTEM: return "System";
-        case MESSAGE_TOOL: return "Tool";
-        default: return "Unknown";
+        case MESSAGE_SYSTEM:    return "System";
+        case MESSAGE_TOOL:      return "Tool";
+        default:                return "Unknown";
     }
 }
 
@@ -182,17 +208,19 @@ char* context_window_get_context(ContextWindow* window) {
         return empty;
     }
     
-    int buffer_size = 0;
+    size_t buffer_size = 0;
     Message* current = window->head;
     while (current != NULL) {
-        buffer_size += strlen(get_message_type_string(current->type)) + strlen(": ") + 
-                      strlen(current->content) + strlen("\n");
+        buffer_size += strlen(get_message_type_string(current->type));
+        buffer_size += strlen(": ");
+        buffer_size += strlen(current->content);
+        buffer_size += strlen("\n");
         current = current->next;
     }
     
     char* context = (char*)malloc(buffer_size + 1);
     if (context == NULL) {
-        printf("Failed to allocate memory for context string\n");
+        fprintf(stderr, "Error: Failed to allocate memory for context string\n");
         return NULL;
     }
     
@@ -225,7 +253,10 @@ void context_window_print_stats(ContextWindow* window) {
     }
     
     printf("Context Window Statistics:\n");
-    printf("Total messages: %d\n", window->message_count);
-    printf("Total tokens: %d/%d\n", window->total_tokens, window->max_tokens);
-    printf("Tokens remaining: %d\n", window->max_tokens - window->total_tokens);
+    printf("  Total messages: %d\n", window->message_count);
+    printf("  Total tokens: %d/%d (%.1f%% full)\n", 
+           window->total_tokens, 
+           window->max_tokens,
+           (window->max_tokens > 0) ? (100.0 * window->total_tokens / window->max_tokens) : 0.0);
+    printf("  Tokens remaining: %d\n", window->max_tokens - window->total_tokens);
 }

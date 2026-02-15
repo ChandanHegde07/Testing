@@ -1,5 +1,6 @@
 // Demo application for the SLM Context Window Manager.
 
+#include <stdio.h>
 #include "context_window.h"
 
 int main() {

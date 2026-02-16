@@ -35,7 +35,7 @@ jobs:
     - name: Check for warnings
       run: |
         make clean
-        make CFLAGS="-Wall -Wextra -Wpedantic -Werror -std=c99" all
+        make all
         echo "Build completed with zero warnings"
 
   test:

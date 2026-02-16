@@ -112,10 +112,6 @@ run: $(TARGET)
 # Run performance benchmarks
 .PHONY: benchmark
 benchmark: $(BENCHMARK_TARGET)
-	@echo ""
-	@echo "Running performance benchmarks..."
-	@echo "=============================================="
-	@./$(BENCHMARK_TARGET)
 
 # Build with debug symbols
 .PHONY: debug
@@ -161,16 +157,8 @@ docs:
 
 # Show project structure
 .PHONY: tree
-tree:
 	@echo "Project Structure:"
 	@find . -type f -name "*.c" -o -name "*.h" -o -name "Makefile" -o -name "*.md" | grep -v ".git" | sort
-
-# Show build information
-.PHONY: info
-info:
-	@echo "Compiler: $(CC)"
-	@echo "Flags: $(CFLAGS)"
-	@echo "Version: $(VERSION)"
 
 # Static analysis with cppcheck
 .PHONY: analyze

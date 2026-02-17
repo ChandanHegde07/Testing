@@ -8,7 +8,7 @@ on:
 
 env:
   CC: gcc
-  CFLAGS: "-Wall -Wextra -Wpedantic -Werror -std=c99"
+  CFLAGS: "-Wall -Wextra -Wpedantic -Werror -std=c11"
 
 jobs:
   build:

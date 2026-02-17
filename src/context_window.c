@@ -1,11 +1,19 @@
 #define _POSIX_C_SOURCE 200809L
 #include "context_window.h"
+#include "version.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdarg.h>
 #include <errno.h>
+
+/* Logging configuration */
+static CWLogLevel g_log_level = CW_LOG_INFO;
+static CWLogCallback g_log_callback = NULL;
+static const char* g_log_level_strings[] = {
+    "ERROR", "WARN", "INFO", "DEBUG", "TRACE"
+};
 
 static Message* create_message(MessageType type, MessagePriority priority, const char* content, int token_ratio);
 static void remove_message(ContextWindow* window, Message* msg);
@@ -18,12 +26,8 @@ static void update_metrics_on_evict(ContextWindow* window, int tokens);
 static CWResult write_message_to_file(FILE* fp, const Message* msg);
 static Message* read_message_from_file(FILE* fp);
 
-#define VERSION_MAJOR 1
-#define VERSION_MINOR 0
-#define VERSION_PATCH 0
-
 const char* context_window_version(void) {
-    return "1.0.0";
+    return VERSION_STRING;
 }
 
 int context_window_version_major(void) {
@@ -921,4 +925,156 @@ CWResult context_window_unlock(ContextWindow* window) {
 
 bool context_window_is_thread_safe(const ContextWindow* window) {
     return window != NULL && window->config.thread_safe;
+}
+
+const char* context_window_result_to_string(CWResult result) {
+    switch (result) {
+        case CW_SUCCESS:            return "Success";
+        case CW_ERROR_NULL_PTR:     return "Null pointer provided";
+        case CW_ERROR_INVALID_PARAM: return "Invalid parameter value";
+        case CW_ERROR_NO_MEMORY:    return "Memory allocation failed";
+        case CW_ERROR_FULL:         return "Window is full";
+        case CW_ERROR_NOT_FOUND:     return "Item not found";
+        case CW_ERROR_IO:            return "File I/O error";
+        case CW_ERROR_LOCKED:       return "Resource is locked";
+        default:                    return "Unknown error";
+    }
+}
+
+int context_window_get_messages_by_type(const ContextWindow* window, MessageType type, char*** messages) {
+    if (window == NULL || messages == NULL) {
+        return 0;
+    }
+    
+    /* First pass: count matching messages */
+    int count = 0;
+    Message* current = window->head;
+    while (current != NULL) {
+        if (current->type == type) {
+            count++;
+        }
+        current = current->next;
+    }
+    
+    if (count == 0) {
+        *messages = NULL;
+        return 0;
+    }
+    
+    /* Allocate array */
+    char** result = (char**)malloc(count * sizeof(char*));
+    if (result == NULL) {
+        return 0;
+    }
+    
+    /* Second pass: copy matching messages */
+    current = window->head;
+    int index = 0;
+    while (current != NULL && index < count) {
+        if (current->type == type) {
+            result[index] = strdup(current->content);
+            if (result[index] == NULL) {
+                /* Cleanup on failure */
+                for (int i = 0; i < index; i++) {
+                    free(result[i]);
+                }
+                free(result);
+                return 0;
+            }
+            index++;
+        }
+        current = current->next;
+    }
+    
+    *messages = result;
+    return count;
+}
+
+int context_window_get_messages_by_priority(const ContextWindow* window, MessagePriority priority, char*** messages) {
+    if (window == NULL || messages == NULL) {
+        return 0;
+    }
+    
+    /* First pass: count matching messages */
+    int count = 0;
+    Message* current = window->head;
+    while (current != NULL) {
+        if (current->priority == priority) {
+            count++;
+        }
+        current = current->next;
+    }
+    
+    if (count == 0) {
+        *messages = NULL;
+        return 0;
+    }
+    
+    /* Allocate array */
+    char** result = (char**)malloc(count * sizeof(char*));
+    if (result == NULL) {
+        return 0;
+    }
+    
+    /* Second pass: copy matching messages */
+    current = window->head;
+    int index = 0;
+    while (current != NULL && index < count) {
+        if (current->priority == priority) {
+            result[index] = strdup(current->content);
+            if (result[index] == NULL) {
+                /* Cleanup on failure */
+                for (int i = 0; i < index; i++) {
+                    free(result[i]);
+                }
+                free(result);
+                return 0;
+            }
+            index++;
+        }
+        current = current->next;
+    }
+    
+    *messages = result;
+    return count;
+}
+
+void context_window_free_message_array(char** messages, int count) {
+    if (messages == NULL) {
+        return;
+    }
+    
+    for (int i = 0; i < count; i++) {
+        free(messages[i]);
+    }
+    free(messages);
+}
+
+void context_window_log(CWLogLevel level, const char* format, ...) {
+    if (level > g_log_level) {
+        return;
+    }
+    
+    char buffer[1024];
+    va_list args;
+    
+    /* Build the message */
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    
+    /* Use callback if set, otherwise print to stderr */
+    if (g_log_callback != NULL) {
+        g_log_callback(level, buffer);
+    } else {
+        fprintf(stderr, "[%s] %s\n", g_log_level_strings[level], buffer);
+    }
+}
+
+void context_window_log_set_level(CWLogLevel level) {
+    g_log_level = level;
+}
+
+void context_window_log_set_callback(CWLogCallback callback) {
+    g_log_callback = callback;
 }

@@ -8,6 +8,11 @@
 #include <stdint.h>
 #include <time.h>
 
+/* Compile-time assertions for structure sizes */
+/* These ensure ABI compatibility across platforms */
+_Static_assert(sizeof(int) >= 4, "int must be at least 32 bits");
+_Static_assert(sizeof(void*) >= 4, "pointer must be at least 32 bits");
+
 #define DEFAULT_TOKEN_RATIO 4
 
 #define MAX_MAX_TOKENS (INT32_MAX / 2)
@@ -47,6 +52,18 @@ typedef enum {
     COMPRESSION_SUMMARIZE,     /**< Summarize old messages (future) */
     COMPRESSION_AGGRESSIVE     /**< Aggressive compression */
 } CompressionStrategy;
+
+/* Log levels */
+typedef enum {
+    CW_LOG_ERROR = 0,    /**< Error messages */
+    CW_LOG_WARN,         /**< Warning messages */
+    CW_LOG_INFO,         /**< Informational messages */
+    CW_LOG_DEBUG,        /**< Debug messages */
+    CW_LOG_TRACE         /**< Trace messages (most verbose) */
+} CWLogLevel;
+
+/* Log callback function type */
+typedef void (*CWLogCallback)(CWLogLevel level, const char* message);
 
 typedef struct ContextMetrics {
     uint64_t messages_added;      /**< Total messages added */
@@ -180,5 +197,19 @@ int context_window_version_major(void);
 int context_window_version_minor(void);
 
 int context_window_version_patch(void);
+
+void context_window_log(CWLogLevel level, const char* format, ...);
+
+void context_window_log_set_level(CWLogLevel level);
+
+void context_window_log_set_callback(CWLogCallback callback);
+
+const char* context_window_result_to_string(CWResult result);
+
+int context_window_get_messages_by_type(const ContextWindow* window, MessageType type, char*** messages);
+
+int context_window_get_messages_by_priority(const ContextWindow* window, MessagePriority priority, char*** messages);
+
+void context_window_free_message_array(char** messages, int count);
 
 #endif 

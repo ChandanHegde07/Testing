@@ -3,8 +3,8 @@
 
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Wextra -Wpedantic -Werror -std=c99 -O2 -Iinclude
-DEBUG_CFLAGS = -Wall -Wextra -Wpedantic -Werror -std=c99 -g -Iinclude -fsanitize=address
+CFLAGS = -Wall -Wextra -Wpedantic -Werror -std=c11 -O2 -Iinclude
+DEBUG_CFLAGS = -Wall -Wextra -Wpedantic -Werror -std=c11 -g -Iinclude -fsanitize=address
 LDFLAGS = -lm
 VALGRIND = valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes
 
@@ -29,6 +29,9 @@ MAIN_SRC = $(SRC_DIR)/main.c
 WINDOW_SRC = $(SRC_DIR)/context_window.c
 TEST_SRC = $(TEST_DIR)/test_window_manager.c
 BENCHMARK_SRC = $(TEST_DIR)/benchmark.c
+
+# Header files
+HEADERS = $(INC_DIR)/context_window.h $(INC_DIR)/version.h
 
 # Object files
 MAIN_OBJ = $(SRC_DIR)/main.o
@@ -71,9 +74,13 @@ $(BENCHMARK_TARGET): $(BENCHMARK_OBJ) $(WINDOW_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo "Built: $(BENCHMARK_TARGET)"
 
-# Compile source files to object files
+# Compile source files to object files with dependency tracking
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+	@echo "Compiled: $<"
+
+# Include dependency files if they exist
+-include $(SRC_DIR)/*.d $(TEST_DIR)/*.d
 
 # Run the test suite
 .PHONY: test
@@ -95,7 +102,7 @@ memtest: $(TEST_TARGET)
 .PHONY: asan
 asan: DEBUG_CFLAGS += -fsanitize=address
 asan: clean
-	$(CC) $(DEBUG_CFLAGS) -o $(TEST_TARGET) $(TEST_SRC) $(WINDOW_SRC) $(LDFLAGS)
+	$(CC) DEBUG_CFLAGS -o $(TEST_TARGET) $(TEST_SRC) $(WINDOW_SRC) $(LDFLAGS)
 	@echo ""
 	@echo "Running with AddressSanitizer..."
 	@echo "=============================================="
@@ -112,6 +119,10 @@ run: $(TARGET)
 # Run performance benchmarks
 .PHONY: benchmark
 benchmark: $(BENCHMARK_TARGET)
+	@echo ""
+	@echo "Running performance benchmark..."
+	@echo "=============================================="
+	@./$(BENCHMARK_TARGET)
 
 # Build with debug symbols
 .PHONY: debug
@@ -121,10 +132,17 @@ debug: clean
 	$(CC) $(DEBUG_CFLAGS) -o $(TEST_TARGET) $(TEST_SRC) $(WINDOW_SRC) $(LDFLAGS)
 	@echo "Debug build complete"
 
+# Build with symbols and no optimization (for debugging)
+.PHONY: dev
+dev: CFLAGS = -Wall -Wextra -g -Iinclude -DDEBUG -O0
+dev: clean all
+	@echo "Development build complete"
+
 # Clean build artifacts
 .PHONY: clean
 clean:
 	@rm -f $(SRC_DIR)/*.o $(TEST_DIR)/*.o
+	@rm -f $(SRC_DIR)/*.d $(TEST_DIR)/*.d
 	@rm -f $(TARGET) $(TEST_TARGET) $(BENCHMARK_TARGET)
 	@rm -f *.out
 
@@ -148,6 +166,7 @@ install: $(TARGET)
 uninstall:
 	@rm -f $(DESTDIR)/usr/local/bin/$(TARGET)
 	@rm -f $(DESTDIR)/usr/local/include/context_window.h
+	@rm -f $(DESTDIR)/usr/local/include/version.h
 	@echo "Uninstalled PCC"
 
 # Generate Doxygen documentation
@@ -157,8 +176,9 @@ docs:
 
 # Show project structure
 .PHONY: tree
+tree:
 	@echo "Project Structure:"
-	@find . -type f -name "*.c" -o -name "*.h" -o -name "Makefile" -o -name "*.md" | grep -v ".git" | sort
+	@find . -type f \( -name "*.c" -o -name "*.h" -o -name "Makefile" -o -name "*.md" \) | grep -v ".git" | sort
 
 # Static analysis with cppcheck
 .PHONY: analyze
@@ -181,10 +201,10 @@ style:
 	@grep -rn "TODO\|FIXME\|XXX\|HACK" src/ include/ tests/ || echo "No TODO/FIXME comments found"
 
 # Dependencies
-$(MAIN_OBJ): $(INC_DIR)/context_window.h
-$(WINDOW_OBJ): $(INC_DIR)/context_window.h
-$(TEST_OBJ): $(INC_DIR)/context_window.h
-$(BENCHMARK_OBJ): $(INC_DIR)/context_window.h
+$(MAIN_OBJ): $(INC_DIR)/context_window.h $(INC_DIR)/version.h
+$(WINDOW_OBJ): $(INC_DIR)/context_window.h $(INC_DIR)/version.h
+$(TEST_OBJ): $(INC_DIR)/context_window.h $(INC_DIR)/version.h
+$(BENCHMARK_OBJ): $(INC_DIR)/context_window.h $(INC_DIR)/version.h
 
 # Help target
 .PHONY: help
@@ -200,6 +220,7 @@ help:
 	@echo "  run         - Run the demo application"
 	@echo "  benchmark   - Run performance benchmarks"
 	@echo "  debug       - Build with debug symbols"
+	@echo "  dev         - Development build with debug info"
 	@echo "  clean       - Remove build artifacts"
 	@echo "  distclean   - Complete clean"
 	@echo "  install     - Install to system"

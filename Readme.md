@@ -4,7 +4,7 @@
 [![Language: C](https://img.shields.io/badge/Language-C-blue.svg)](https://en.wikipedia.org/wiki/C_(programming_language))
 [![Platform: POSIX](https://img.shields.io/badge/Platform-POSIX-green.svg)](https://en.wikipedia.org/wiki/POSIX)
 [![Build](https://github.com/ChandanHegde07/PCC/actions/workflows/ci.yml/badge.svg)](https://github.com/ChandanHegde07/PCC/actions)
-[![Tests](https://img.shields.io/badge/Tests-23%20passed-green.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-23%20passed-green.svg)](https://github.com/ChandanHegde07/PCC/actions)
 
 > A lightweight, efficient C-based system for managing conversation history within the limited context window constraints of Small Language Models (SLMs).
 
@@ -32,7 +32,7 @@
 
 ## Overview
 
-**PCC (Prompt Context Controller)** is a production-ready C library designed to efficiently manage conversation history for Small Language Models. It implements intelligent context window management using proven data structures and algorithms, ensuring optimal token utilization while preserving critical conversation context.
+**PCC (Prompt Context Controller)** is a production-ready C library designed to efficiently manage conversation history for Small Language Models (SLMs). It implements intelligent context window management using proven data structures and algorithms, ensuring optimal token utilization while preserving critical conversation context.
 
 ### Why PCC?
 
@@ -45,7 +45,7 @@
 | **Easy Integration** | Simple API for direct integration into existing projects |
 | **Production Ready** | Comprehensive tests, CI/CD, and documentation |
 | **Metrics** | Built-in metrics tracking for monitoring |
-| **Configurable** | Flexible configuration system |
+| **Configurable** | Flexible configuration system for custom behavior |
 | **Persistent** | Save/load conversation state |
 
 ---
@@ -411,13 +411,13 @@ make asan
 
 ## CI/CD
 
-The project uses GitHub Actions for continuous integration:
+The project uses GitHub Actions for continuous integration and deployment:
 
-- **Build**: Compiles with `-Wall -Wextra -Wpedantic -Werror`
-- **Test**: Runs comprehensive test suite
-- **Benchmark**: Measures performance
+- **Build**: Compiles with `-Wall -Wextra -Wpedantic -Werror` for strict compilation
+- **Test**: Runs comprehensive test suite with detailed reporting
+- **Benchmark**: Measures performance metrics
 - **Static Analysis**: Checks code quality with cppcheck
-- **Artifacts**: Uploads binaries for download
+- **Artifacts**: Uploads binaries for download and versioning
 
 ---
 
